@@ -1,8 +1,8 @@
-# Steps taken to deploy traefik stack
+# Steps taken to deploy Traefik stack
 
 Based on guide by [Docker Swarm Rocks](https://dockerswarm.rocks/traefik/)
 
-## Prepare enviroment variables
+## Prepare environment variables
 
 Create a network for trafik
 
@@ -36,6 +36,6 @@ Export you password interactively
 
     export HASHED_PASSWORD=$(openssl passwd -apr1)
 
-## Deploy traefik
+## Deploy Traefik
 
     docker stack deploy -c docker-compose.yml traefik

@@ -1,6 +1,6 @@
-# Steps taken to deploy localdns (adguard) stack
+# Steps taken to deploy Adguard stack
 
-## Prepare enviroment variables
+## Prepare environment variables
 
 Get manager node ID
 
