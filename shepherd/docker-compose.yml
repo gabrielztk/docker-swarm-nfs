@@ -1,0 +1,10 @@
+version: "3"
+services:
+  shepherd:
+    image: containrrr/shepherd:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
