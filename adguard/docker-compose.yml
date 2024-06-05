@@ -16,7 +16,7 @@ services:
         - traefik.constraint-label=traefik-public
         # traefik-https the actual router using HTTPS
         # Uses the environment variable BASE_DOMAIN
-        - traefik.http.routers.adguardhome.rule=Host(`adguard.${BASE_DOMAIN}`)
+        - traefik.http.routers.adguardhome.rule=Host(`adguard.${BASE_DOMAIN?Variable not set}`)
         - traefik.http.routers.adguardhome.entrypoints=https
         - traefik.http.routers.adguardhome.tls=true
         # Serve the container on port 8080
@@ -49,7 +49,7 @@ services:
         - traefik.constraint-label=traefik-public
         # traefik-https the actual router using HTTPS
         # Uses the environment variable BASE_DOMAIN
-        - traefik.http.routers.adguardhome-sync.rule=Host(`adguard-sync.${BASE_DOMAIN}`)
+        - traefik.http.routers.adguardhome-sync.rule=Host(`adguard-sync.${BASE_DOMAIN?Variable not set}`)
         - traefik.http.routers.adguardhome-sync.entrypoints=https
         - traefik.http.routers.adguardhome-sync.tls=true
         # Serve the container on port 8080

@@ -28,10 +28,6 @@ Export base domain
 
     export BASE_DOMAIN=your.domain.here
 
-Export traefic UI domain
-
-    export DOMAIN=traefik.$BASE_DOMAIN
-
 Export you username for the traefik UI
 
     export USERNAME=admin
