@@ -1,0 +1,28 @@
+# cron expression to run in daemon mode. (default; "" = runs only once)
+cron: "0 */2 * * *"
+
+# runs the synchronisation on startup
+runOnStart: true
+
+# If enabled, the synchronisation task will not fail on single errors, but will log the errors and continue
+continueOnError: false
+
+origin:
+  # url of the origin instance
+  url: http://adguardhome:3000
+  # apiPath: define an api path if other than "/control"
+  insecureSkipVerify: true # disable tls check
+  username: admin
+  password: ADGUARD_PASSWORD
+
+# replicas instances
+replicas:
+  # url of the replica instance
+  - url: http://192.168.1.250:3000
+    username: admin
+    password: ADGUARD_PASSWORD
+
+# Configure the sync API server, disabled if api port is 0
+api:
+  # enable api dark mode
+  darkMode: true

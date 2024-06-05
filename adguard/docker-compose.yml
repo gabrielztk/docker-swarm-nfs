@@ -1,0 +1,75 @@
+version: "3.3"
+
+services:
+  adguardhome:
+    image: adguard/adguardhome:latest
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+    deploy:
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.adguardhome.rule=Host(`adguard.${BASE_DOMAIN}`)
+        - traefik.http.routers.adguardhome.entrypoints=https
+        - traefik.http.routers.adguardhome.tls=true
+        # Serve the container on port 8080
+        - traefik.http.services.adguardhome.loadbalancer.server.port=3000
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.adguardhome.tls.certresolver=le
+        # Enable HTTP Basic auth, using the middleware created above
+        - traefik.http.routers.adguardhome.middlewares=admin-auth
+    volumes:
+      - adguardhome:/opt/adguardhome/
+    networks:
+      # Use the public network created to be shared between Traefik and
+      # any other service that needs to be publicly available with HTTPS
+      - traefik-public
+
+  adguardhome-sync:
+    # Use the latest image available
+    image: ghcr.io/bakito/adguardhome-sync:latest
+    deploy:
+      placement:
+        constraints:
+          # Make the traefik service run only on the node with this label
+          - node.labels.manager == true
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.adguardhome-sync.rule=Host(`adguard-sync.${BASE_DOMAIN}`)
+        - traefik.http.routers.adguardhome-sync.entrypoints=https
+        - traefik.http.routers.adguardhome-sync.tls=true
+        # Serve the container on port 8080
+        - traefik.http.services.adguardhome-sync.loadbalancer.server.port=8080
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.adguardhome-sync.tls.certresolver=le
+        # Enable HTTP Basic auth, using the middleware created above
+        - traefik.http.routers.adguardhome-sync.middlewares=admin-auth
+    volumes:
+      - ./adguardhome-sync.yaml:/config/adguardhome-sync.yaml:ro
+    networks:
+      # Use the public network created to be shared between Traefik and
+      # any other service that needs to be publicly available with HTTPS
+      - traefik-public
+
+volumes:
+  adguardhome:
+
+networks:
+  # Use the previously created public network "traefik-public", shared with other
+  # services that need to be publicly available via this Traefik
+  traefik-public:
+    external: true
