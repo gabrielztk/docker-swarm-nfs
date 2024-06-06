@@ -35,10 +35,10 @@ services:
     # Use the latest image available
     image: ghcr.io/bakito/adguardhome-sync:latest
     deploy:
-      placement:
-        constraints:
-          # Make the traefik service run only on the node with this label
-          - node.labels.manager == true
+      # placement:
+      #   constraints:
+      #     # Make the traefik service run only on the node with this label
+      #     - node.labels.manager == true
       labels:
         # Enable Traefik for this service, to make it available in the public network
         - traefik.enable=true
@@ -58,14 +58,25 @@ services:
         # Enable HTTP Basic auth, using the middleware created above
         - traefik.http.routers.adguardhome-sync.middlewares=admin-auth
     volumes:
-      - ./adguardhome-sync.yaml:/config/adguardhome-sync.yaml:ro
+      - adguardsync:/config/:ro
     networks:
       # Use the public network created to be shared between Traefik and
       # any other service that needs to be publicly available with HTTPS
       - traefik-public
 
 volumes:
+  adguardsync:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/adguard/adguardsync-volume"
   adguardhome:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/adguard/adguardhome-volume"
 
 networks:
   # Use the previously created public network "traefik-public", shared with other

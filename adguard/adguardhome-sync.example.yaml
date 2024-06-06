@@ -9,18 +9,18 @@ continueOnError: false
 
 origin:
   # url of the origin instance
-  url: http://adguard:3000
+  url: http://adguardhome:3000
   # apiPath: define an api path if other than "/control"
   insecureSkipVerify: true # disable tls check
   username: admin
-  password: ADGUARD_PASSWORD
+  password: password
 
 # replicas instances
 replicas:
   # url of the replica instance
-  - url: http://192.168.1.250:3000
+  - url: http://LAN_IP:CHOASEN_PORT
     username: admin
-    password: ADGUARD_PASSWORD
+    password: password
 
 # Configure the sync API server, disabled if api port is 0
 api:
