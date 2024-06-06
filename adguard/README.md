@@ -14,14 +14,6 @@ Export base domain
 
     export BASE_DOMAIN=your.domain.here
 
-Export you username for the UI
-
-    export USERNAME=admin
-
-Export you password interactively
-
-    export HASHED_PASSWORD=$(openssl passwd -apr1)
-
 ## Deploy localdns
 
-    docker stack deploy -c docker-compose.yml localdns
+    docker stack deploy -d -c docker-compose.yml localdns

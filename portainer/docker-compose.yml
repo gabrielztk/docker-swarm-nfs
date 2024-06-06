@@ -1,0 +1,56 @@
+version: "3.3"
+
+services:
+  agent:
+    image: portainer/agent
+    environment:
+      AGENT_CLUSTER_ADDR: tasks.agent
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/volumes:/var/lib/docker/volumes
+    networks:
+      - agent-network
+    deploy:
+      mode: global
+      placement:
+        constraints:
+          - node.platform.os == linux
+
+  portainer:
+    image: portainer/portainer-ce
+    command: -H tcp://tasks.agent:9001 --tlsskipverify
+    volumes:
+      - portainer-data:/data
+    networks:
+      - agent-network
+      - traefik-public
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+          - node.labels.portainer.portainer-data == true
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.portainer.rule=Host(`portainer.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.portainer.entrypoints=https
+        - traefik.http.routers.portainer.tls=true
+        # Serve the container on port 9000
+        - traefik.http.services.portainer.loadbalancer.server.port=9000
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.portainer.tls.certresolver=le
+
+networks:
+  agent-network:
+    attachable: true
+  traefik-public:
+    external: true
+
+volumes:
+  portainer-data:

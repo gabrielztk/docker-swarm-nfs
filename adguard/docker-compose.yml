@@ -23,8 +23,7 @@ services:
         - traefik.http.services.adguardhome.loadbalancer.server.port=3000
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.adguardhome.tls.certresolver=le
-        # Enable HTTP Basic auth, using the middleware created above
-        - traefik.http.routers.adguardhome.middlewares=admin-auth
+
     volumes:
       - adguardhome:/opt/adguardhome/
     networks:

@@ -38,4 +38,4 @@ Export you password interactively
 
 ## Deploy Traefik
 
-    docker stack deploy -c docker-compose.yml traefik
+    docker stack deploy -d -c docker-compose.yml traefik

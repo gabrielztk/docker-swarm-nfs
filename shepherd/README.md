@@ -2,4 +2,4 @@
 
 ## Deploy shepherd
 
-    docker stack deploy -c docker-compose.yml shepherd
+    docker stack deploy -d -c docker-compose.yml shepherd
