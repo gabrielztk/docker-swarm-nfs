@@ -1,0 +1,184 @@
+version: "3.8"
+
+# In this Docker Compose example, we use Docker Swarm to deploy Reactive Resume on multiple servers, with Traefik as the load balancer.
+# Ensure that the overlay network is created before deploying this stack. You can do so by running the following command:
+# docker network create --driver=overlay --attachable reactive_resume_network
+
+services:
+  # Database (Postgres)
+  postgres:
+    image: postgres:16-alpine
+    networks:
+      - reactive_resume_network
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      POSTGRES_DB: ${RESUME_POSTGRES_DB?Variable not set}
+      POSTGRES_USER: ${RESUME_POSTGRES_USER?Variable not set}
+      POSTGRES_PASSWORD: ${RESUME_POSTGRES_PASSWORD?Variable not set}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${RESUME_POSTGRES_USER?Variable not set} -d ${RESUME_POSTGRES_DB?Variable not set}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Storage (for image uploads)
+  minio:
+    image: minio/minio
+    command: server /data
+    networks:
+      - reactive_resume_network
+      - traefik-public
+    volumes:
+      - minio_data:/data
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      MINIO_ROOT_USER: ${RESUME_STORAGE_ACCESS_KEY?Variable not set}
+      MINIO_ROOT_PASSWORD: ${RESUME_STORAGE_SECRET_KEY?Variable not set}
+    deploy:
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.resume-storage.rule=Host(`resume-storage.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.resume-storage.entrypoints=https
+        - traefik.http.routers.resume-storage.tls=true
+        # Serve the container on port 9000
+        - traefik.http.services.resume-storage.loadbalancer.server.port=9000
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.resume-storage.tls.certresolver=le
+
+  # Chrome Browser (for printing and previews)
+  chrome:
+    image: ghcr.io/browserless/chromium:latest
+    networks:
+      - reactive_resume_network
+      - traefik-public
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      TIMEOUT: 10000
+      CONCURRENT: 10
+      TOKEN: ${RESUME_CHROME_TOKEN?Variable not set}
+      EXIT_ON_HEALTH_FAILURE: "true"
+      PRE_REQUEST_HEALTH_CHECK: "true"
+    deploy:
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.resume-printer.rule=Host(`resume-printer.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.resume-printer.entrypoints=https
+        - traefik.http.routers.resume-printer.tls=true
+        # Serve the container on port 3000
+        - traefik.http.services.resume-printer.loadbalancer.server.port=3000
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.resume-printer.tls.certresolver=le
+
+  app:
+    image: amruthpillai/reactive-resume:latest
+    networks:
+      - reactive_resume_network
+      - traefik-public
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      # -- Environment Variables --
+      PORT: 3000
+      NODE_ENV: production
+
+      # -- URLs --
+      PUBLIC_URL: https://reactive-resume.${BASE_DOMAIN?Variable not set}
+      STORAGE_URL: https://resume-storage.${BASE_DOMAIN?Variable not set}
+
+      # -- Printer (Chrome) --
+      CHROME_TOKEN: ${RESUME_CHROME_TOKEN?Variable not set}
+      CHROME_URL: wss://resume-printer.${BASE_DOMAIN?Variable not set}
+
+      # -- Database (Postgres) --
+      DATABASE_URL: postgresql://${RESUME_POSTGRES_USER?Variable not set}:${RESUME_POSTGRES_PASSWORD?Variable not set}@postgres:5432/${RESUME_POSTGRES_DB?Variable not set}
+
+      # -- Auth --
+      ACCESS_TOKEN_SECRET: ${RESUME_ACCESS_TOKEN_SECRET?Variable not set}
+      REFRESH_TOKEN_SECRET: ${RESUME_REFRESH_TOKEN_SECRET?Variable not set}
+
+      # -- Emails --
+      MAIL_FROM: noreply@example.com
+      # SMTP_URL: smtp://user:pass@smtp:587 # Optional
+
+      # -- Storage (Minio) --
+      STORAGE_ENDPOINT: minio
+      STORAGE_PORT: 9000
+      STORAGE_REGION: us-east-1 # Optional
+      STORAGE_BUCKET: default
+      STORAGE_ACCESS_KEY: ${RESUME_STORAGE_ACCESS_KEY?Variable not set}
+      STORAGE_SECRET_KEY: ${RESUME_STORAGE_SECRET_KEY?Variable not set}
+      STORAGE_USE_SSL: "false"
+      STORAGE_SKIP_BUCKET_CHECK: "false"
+
+      # -- Crowdin (Optional) --
+      # CROWDIN_PROJECT_ID:
+      # CROWDIN_PERSONAL_TOKEN:
+
+      # -- Feature Flags (Optional) --
+      # DISABLE_SIGNUPS: false
+      # DISABLE_EMAIL_AUTH: false
+
+      # -- GitHub (Optional) --
+      # GITHUB_CLIENT_ID: github_client_id
+      # GITHUB_CLIENT_SECRET: github_client_secret
+      # GITHUB_CALLBACK_URL: https://example.com/api/auth/github/callback
+
+      # -- Google (Optional) --
+      # GOOGLE_CLIENT_ID: google_client_id
+      # GOOGLE_CLIENT_SECRET: google_client_secret
+      # GOOGLE_CALLBACK_URL: https://example.com/api/auth/google/callback
+    deploy:
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.reactive-resume.rule=Host(`reactive-resume.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.reactive-resume.entrypoints=https
+        - traefik.http.routers.reactive-resume.tls=true
+        # Serve the container on port 3000
+        - traefik.http.services.reactive-resume.loadbalancer.server.port=3000
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.reactive-resume.tls.certresolver=le
+
+volumes:
+  minio_data:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/reactive-resume/minio-volume"
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/reactive-resume/postgres-volume"
+
+networks:
+  reactive_resume_network:
+  traefik-public:
+    external: true
