@@ -1,0 +1,56 @@
+version: "3.0"
+
+networks:
+  traefik-public:
+    external: true
+
+services:
+  webservice:
+    # Use the latest wallos image available
+    image: bellamy/wallos:latest
+    networks:
+      # Use the public network created to be shared between Traefik and
+      # any other service that needs to be publicly available with HTTPS
+      - traefik-public
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+    # Volumes store your data between container upgrades
+    volumes:
+      # Mount the volume to store the database
+      - "database:/var/www/html/db"
+      # Mount the volume to store the logos
+      - "logos:/var/www/html/images/uploads/logos"
+    deploy:
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.wallos.rule=Host(`wallos.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.wallos.entrypoints=https
+        - traefik.http.routers.wallos.tls=true
+        # Serve the container on port 80
+        - traefik.http.services.wallos.loadbalancer.server.port=80
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.wallos.tls.certresolver=le
+
+volumes:
+  # Create the volumes to store database and logos data, the volumes are saved on the NFS share
+  # In specific, inside the wallos directory
+  database:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/wallos/database-volume"
+
+  logos:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/wallos/logos-volume"
