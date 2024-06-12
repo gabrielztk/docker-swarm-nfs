@@ -10,6 +10,8 @@ services:
         target: /data
         volume:
           nocopy: true
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
     deploy:
       mode: global
 
@@ -19,4 +21,4 @@ volumes:
     driver_opts:
       type: "nfs"
       o: addr=${NFS_IP?Variable not set},nolock,soft,rw
-      device: ":${NFS_SHARE_PATH?Variable not set}/nfs_test"
+      device: ":${NFS_SHARE_PATH?Variable not set}"

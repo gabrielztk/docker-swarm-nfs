@@ -4,6 +4,7 @@ services:
   agent:
     image: portainer/agent
     environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
       AGENT_CLUSTER_ADDR: tasks.agent
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -16,19 +17,20 @@ services:
         constraints:
           - node.platform.os == linux
 
-  portainer:
+  webserver:
     image: portainer/portainer-ce
     command: -H tcp://tasks.agent:9001 --tlsskipverify
     volumes:
-      - portainer-data:/data
+      - data:/data
     networks:
       - agent-network
       - traefik-public
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
     deploy:
       placement:
         constraints:
           - node.role == manager
-          - node.labels.portainer.portainer-data == true
       labels:
         # Enable Traefik for this service, to make it available in the public network
         - traefik.enable=true
@@ -53,4 +55,11 @@ networks:
     external: true
 
 volumes:
-  portainer-data:
+  # Create the volume to store portainer data, the volume is saved on the NFS share
+  # In specific, inside the portainer directory
+  data:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/portainer/portainer-volume"

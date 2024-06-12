@@ -10,9 +10,9 @@ services:
     environment:
       TZ: ${TIME_ZONE:-America/Sao_Paulo}
       # The database authentication and connection environment variables
-      DB_DATABASE: ${DB_DATABASE:-linguacafe}
-      DB_USERNAME: ${DB_USERNAME:-linguacafe}
-      DB_PASSWORD: ${DB_PASSWORD:-linguacafe}
+      DB_DATABASE: ${LINGUACAFE_DB_DATABASE:-linguacafe}
+      DB_USERNAME: ${LINGUACAFE_DB_USERNAME:-linguacafe}
+      DB_PASSWORD: ${LINGUACAFE_DB_PASSWORD:-linguacafe}
     networks:
       linguacafe:
         aliases:
@@ -47,10 +47,10 @@ services:
     environment:
       TZ: ${TIME_ZONE:-America/Sao_Paulo}
       # The database authentication and connection environment variables
-      MYSQL_DATABASE: ${DB_DATABASE:-linguacafe}
-      MYSQL_USER: ${DB_USERNAME:-linguacafe}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-linguacafe}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-linguacafe}
+      MYSQL_DATABASE: ${LINGUACAFE_DB_DATABASE:-linguacafe}
+      MYSQL_USER: ${LINGUACAFE_DB_USERNAME:-linguacafe}
+      MYSQL_PASSWORD: ${LINGUACAFE_DB_PASSWORD:-linguacafe}
+      MYSQL_ROOT_PASSWORD: ${LINGUACAFE_DB_ROOT_PASSWORD:-linguacafe}
       SERVICE_NAME: linguacafe
     command: mysqld --general-log=1 --general-log-file=/var/lib/mysql/general-log.log
     networks:

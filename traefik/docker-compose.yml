@@ -1,22 +1,30 @@
 version: "3.3"
 
 services:
-  traefik:
+  reverse-proxy:
     # Use the latest v3.0.x Traefik image available
     image: traefik:v3.0
     ports:
       # Listen on port 80, default for HTTP, necessary to redirect to HTTPS
-      - 80:80
+      # Mode is host so the container can know the IP of the clients
+      - target: 80
+        published: 80
+        mode: host
       # Listen on port 443, default for HTTPS
-      - 443:443
+      # Mode is host so the container can know the IP of the clients
+      - target: 443
+        published: 443
+        mode: host
     environment:
-      - DUCKDNS_TOKEN=${DUCKDNS_TOKEN}
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      # The duckdns token for the dns challenge
+      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN}
     deploy:
       placement:
         constraints:
           # Make the traefik service run only on the node with this label
           # as the node with it has the volume for the certificates
-          - node.labels.traefik-public.traefik-public-certificates == true
+          - node.labels.node.name == ${TRAEFIK_NODE?Variable not set}
       labels:
         # Enable Traefik for this service, to make it available in the public network
         - traefik.enable=true
@@ -54,11 +62,12 @@ services:
         - traefik.http.routers.traefik-public-https.middlewares=admin-auth
         # Define the port inside of the Docker service to use
         - traefik.http.services.traefik-public.loadbalancer.server.port=8080
+
     volumes:
       # Add Docker as a mounted volume, so that Traefik can read the labels of other services
       - /var/run/docker.sock:/var/run/docker.sock:ro
       # Mount the volume to store the certificates
-      - traefik-public-certificates:/certificates
+      - certificates:/certificates
     command:
       # Enable Docker in Traefik, so that it reads labels from Docker services
       - --providers.docker
@@ -94,10 +103,14 @@ services:
       - traefik-public
 
 volumes:
-  # Create a volume to store the certificates, there is a constraint to make sure
-  # Traefik is always deployed to the same Docker node with the same volume containing
-  # the HTTPS certificates
-  traefik-public-certificates:
+  # Create the volume to store the certificate data, the volume is saved on the NFS share
+  # In specific, inside the traefik directory
+  certificates:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/traefik/traefik-volume"
 
 networks:
   # Use the previously created public network "traefik-public", shared with other

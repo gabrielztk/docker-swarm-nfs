@@ -1,12 +1,15 @@
 version: "3"
 services:
-  shepherd:
+  agent:
     image: containrrr/shepherd:latest
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
-      - SLEEP_TIME=1440m
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      # Sleep time between checks for updates
+      SLEEP_TIME: 1440m
     deploy:
       placement:
         constraints:
+          # Shepherd needs to be placed on a manager node to update services
           - node.role == manager
