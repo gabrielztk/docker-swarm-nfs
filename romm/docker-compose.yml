@@ -1,0 +1,113 @@
+version: "3"
+
+services:
+  webserver:
+    image: rommapp/romm:latest
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      DB_HOST: romm-database
+      DB_NAME: ${ROMM_MYSQL_DB?Variable not set} # Should match MYSQL_DATABASE in mariadb
+      DB_USER: ${ROMM_MYSQL_USER?Variable not set} # Should match MYSQL_USER in mariadb
+      DB_PASSWD: ${ROMM_MYSQL_PASSWORD?Variable not set} # Should match MYSQL_PASSWORD in mariadb
+      IGDB_CLIENT_ID: ${IGDB_CLIENT_ID?Variable not set} # Generate an ID and SECRET in IGDB
+      IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET?Variable not set} # https://api-docs.igdb.com/#account-creation
+      MOBYGAMES_API_KEY: ${MOBYGAMES_API_KEY?Variable not set} # https://www.mobygames.com/info/api/
+      ROMM_AUTH_SECRET_KEY: ${ROMM_AUTH_SECRET_KEY?Variable not set} b74ede4e16bfe42de903902bd6e235e2303132604e9d0c8eb68259ccdf2dcdc8 # Generate a key with `openssl rand -hex 32`
+      ROMM_AUTH_USERNAME: ${ROMM_AUTH_USERNAME?Variable not set}
+      ROMM_AUTH_PASSWORD: ${ROMM_AUTH_PASSWORD?Variable not set} # default: admin
+    volumes:
+      - resources:/romm/resources # Resources fetched from IGDB (covers, screenshots, etc.)
+      - redis:/redis-data # Cached data for background tasks
+      - library:/romm/library # Your game library
+      - assets:/romm/assets # Uploaded saves, states, etc.
+      - config:/romm/config # Path where config.yml is stored
+
+    networks:
+      romm:
+      # Use the public network created to be shared between Traefik and
+      # any other service that needs to be publicly available with HTTPS
+      traefik-public:
+    deploy:
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.romm.rule=Host(`romm.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.romm.entrypoints=https
+        - traefik.http.routers.romm.tls=true
+        # Serve the container on port 8080
+        - traefik.http.services.romm.loadbalancer.server.port=8080
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.romm.tls.certresolver=le
+    depends_on:
+      - database
+
+  database:
+    image: mariadb:latest
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      MYSQL_ROOT_PASSWORD: ${ROMM_MYSQL_PASSWORD?Variable not set}# Use a unique, secure password
+      MYSQL_DATABASE: ${ROMM_MYSQL_DB?Variable not set}
+      MYSQL_USER: ${ROMM_MYSQL_USER?Variable not set}
+      MYSQL_PASSWORD: ${ROMM_MYSQL_PASSWORD?Variable not set}
+    volumes:
+      - mysql:/var/lib/mysql
+    networks:
+      romm:
+        aliases:
+          - romm-database
+
+networks:
+  romm:
+  # Use the previously created public network "traefik-public", shared with other
+  # services and traefik, the service will be publicly available via Traefik
+  traefik-public:
+    external: true
+
+volumes:
+  resources:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${ROMS_NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${ROMS_NFS_SHARE_PATH?Variable not set}/resources"
+
+  library:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${ROMS_NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${ROMS_NFS_SHARE_PATH?Variable not set}/library"
+
+  assets:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${ROMS_NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${ROMS_NFS_SHARE_PATH?Variable not set}/assets"
+
+  mysql:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/romm/mysql-volume"
+
+  config:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/romm/config-volume"
+
+  redis:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/romm/redis-volume"
