@@ -4,9 +4,21 @@ services:
   adguardhome:
     image: adguard/adguardhome:latest
     ports:
-      - 53:53/tcp
-      - 53:53/udp
+      # Listen on port 80, default for HTTP, necessary to redirect to HTTPS
+      - target: 53
+        published: 53
+        mode: host
+        protocol: tcp
+      - target: 53
+        published: 53
+        mode: host
+        protocol: udp
+
     deploy:
+      placement:
+        constraints:
+          # Make the adguardhome service run only on the manager node
+          - node.role == manager
       labels:
         # Enable Traefik for this service, to make it available in the public network
         - traefik.enable=true
@@ -19,7 +31,7 @@ services:
         - traefik.http.routers.adguardhome.rule=Host(`adguard.${BASE_DOMAIN?Variable not set}`)
         - traefik.http.routers.adguardhome.entrypoints=https
         - traefik.http.routers.adguardhome.tls=true
-        # Serve the container on port 8080
+        # Serve the container on port 3000
         - traefik.http.services.adguardhome.loadbalancer.server.port=3000
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.adguardhome.tls.certresolver=le
@@ -35,10 +47,6 @@ services:
     # Use the latest image available
     image: ghcr.io/bakito/adguardhome-sync:latest
     deploy:
-      # placement:
-      #   constraints:
-      #     # Make the traefik service run only on the node with this label
-      #     - node.labels.manager == true
       labels:
         # Enable Traefik for this service, to make it available in the public network
         - traefik.enable=true

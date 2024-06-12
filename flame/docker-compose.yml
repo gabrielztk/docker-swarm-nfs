@@ -1,0 +1,45 @@
+version: "3.6"
+
+services:
+  webserver:
+    image: pawelmalak/flame
+    volumes:
+      - data:/app/data
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      PASSWORD: ${FLAME_PASSWORD?Variable not set}
+    networks:
+      - traefik-public
+    deploy:
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.flame.rule=Host(`flame.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.flame.entrypoints=https
+        - traefik.http.routers.flame.tls=true
+        # Serve the container on port 5005
+        - traefik.http.services.flame.loadbalancer.server.port=5005
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.flame.tls.certresolver=le
+
+networks:
+  # Use the previously created public network "traefik-public", shared with other
+  # services and traefik, the service will be publicly available via Traefik
+  traefik-public:
+    external: true
+
+volumes:
+  # Create the volume to store flame data, the volume is saved on the NFS share
+  # In specific, inside the flame directory
+  data:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/flame/data-volume"
