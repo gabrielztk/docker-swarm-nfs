@@ -49,7 +49,9 @@ services:
     networks:
       # Use the public network created to be shared between Traefik and
       # any other service that needs to be publicly available with HTTPS
-      - traefik-public
+      traefik-public:
+        aliases:
+          - adguardhome
 
   sync:
     # Use the latest adguardhome-sync image available
@@ -73,7 +75,7 @@ services:
         - traefik.http.services.adguardhome-sync.loadbalancer.server.port=8080
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.adguardhome-sync.tls.certresolver=le
-        # Enable HTTP Basic auth, using the middleware created above
+        # Enable HTTP Basic auth using the middleware
         - traefik.http.routers.adguardhome-sync.middlewares=admin-auth
     volumes:
       # Mount the volume to store the sync config
@@ -81,7 +83,7 @@ services:
     networks:
       # Use the public network created to be shared between Traefik and
       # any other service that needs to be publicly available with HTTPS
-      - traefik-public
+      traefik-public:
 
 volumes:
   # Create the volumes to store adguard and adguard-sync data, the volumes are saved on the NFS share

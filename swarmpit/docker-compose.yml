@@ -1,0 +1,86 @@
+version: "3.3"
+
+services:
+  webserver:
+    image: swarmpit/swarmpit:latest
+    environment:
+      - SWARMPIT_DB=http://swarmpit-database:5984
+      - SWARMPIT_INFLUXDB=http://swarmpit-influxdb:8086
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      net:
+        aliases:
+          - swarmpit-webserver
+      traefik-public:
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.swarmpit.rule=Host(`swarmpit.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.swarmpit.entrypoints=https
+        - traefik.http.routers.swarmpit.tls=true
+        # Serve the container on port 8080
+        - traefik.http.services.swarmpit.loadbalancer.server.port=8080
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.swarmpit.tls.certresolver=le
+
+  database:
+    image: couchdb:2.3.1
+    volumes:
+      - db-data:/opt/couchdb/data
+    networks:
+      net:
+        aliases:
+          - swarmpit-database
+
+  influxdb:
+    image: influxdb:1.7-alpine
+    volumes:
+      - influx-data:/var/lib/influxdb
+    networks:
+      net:
+        aliases:
+          - swarmpit-influxdb
+
+  agent:
+    image: swarmpit/agent:latest
+    environment:
+      - DOCKER_API_VERSION=${DOCKER_API_VERSION?Variable not set}
+      - EVENT_ENDPOINT=http://swarmpit-webserver:8080/events
+      - HEALTH_CHECK_ENDPOINT=http://swarmpit-webserver:8080/version
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      net:
+    deploy:
+      mode: global
+
+networks:
+  net:
+  traefik-public:
+    external: true
+
+volumes:
+  db-data:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/swarmpit/database-volume"
+
+  influx-data:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/swarmpit/influxdb-volume"

@@ -1,0 +1,69 @@
+version: "3"
+
+services:
+  webserver:
+    image: mohsenasm/swarm-dashboard:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      TZ: ${TIME_ZONE:-America/Sao_Paulo}
+      NODE_EXPORTER_SERVICE_NAME_REGEX: "node-exporter"
+      CADVISOR_SERVICE_NAME_REGEX: "cadvisor"
+    networks:
+      swarm-dashboard:
+      # Use the public network created to be shared between Traefik and
+      # any other service that needs to be publicly available with HTTPS
+      traefik-public:
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.swarm-dashboard.rule=Host(`swarm-dashboard.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.swarm-dashboard.entrypoints=https
+        - traefik.http.routers.swarm-dashboard.tls=true
+        # Serve the container on port 8080
+        - traefik.http.services.swarm-dashboard.loadbalancer.server.port=8080
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.swarm-dashboard.tls.certresolver=le
+        # Enable HTTP Basic auth using the middleware
+        - traefik.http.routers.swarm-dashboard.middlewares=admin-auth
+
+  node-exporter:
+    image: quay.io/prometheus/node-exporter:v1.6.1
+    volumes:
+      - "/:/host:ro"
+    command:
+      - "--path.rootfs=/host"
+    deploy:
+      mode: global
+    networks:
+      swarm-dashboard:
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    deploy:
+      mode: global
+    networks:
+      swarm-dashboard:
+
+networks:
+  swarm-dashboard:
+  # Use the previously created public network "traefik-public", shared with other
+  # services and traefik, the service will be publicly available via Traefik
+  traefik-public:
+    external: true
