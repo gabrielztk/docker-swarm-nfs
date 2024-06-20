@@ -1,2 +1,3 @@
 *volume/
-exports.txt
+exports.sh
+.env

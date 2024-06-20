@@ -1,10 +1,10 @@
 # cron expression to run in daemon mode. (default; "" = runs only once)
 cron: "0 */2 * * *"
 
-# runs the synchronisation on startup
+# runs the synchronization on startup
 runOnStart: true
 
-# If enabled, the synchronisation task will not fail on single errors, but will log the errors and continue
+# If enabled, the synchronization task will not fail on single errors, but will log the errors and continue
 continueOnError: false
 
 origin:

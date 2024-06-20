@@ -18,7 +18,7 @@ services:
     environment:
       TZ: ${TIME_ZONE:-America/Sao_Paulo}
       # The duckdns token for the dns challenge
-      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN}
+      DUCKDNS_TOKEN: ${DUCKDNS_TOKEN?Variable not set}
     deploy:
       placement:
         constraints:

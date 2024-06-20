@@ -12,7 +12,7 @@ services:
       IGDB_CLIENT_ID: ${IGDB_CLIENT_ID?Variable not set} # Generate an ID and SECRET in IGDB
       IGDB_CLIENT_SECRET: ${IGDB_CLIENT_SECRET?Variable not set} # https://api-docs.igdb.com/#account-creation
       MOBYGAMES_API_KEY: ${MOBYGAMES_API_KEY?Variable not set} # https://www.mobygames.com/info/api/
-      ROMM_AUTH_SECRET_KEY: ${ROMM_AUTH_SECRET_KEY?Variable not set} b74ede4e16bfe42de903902bd6e235e2303132604e9d0c8eb68259ccdf2dcdc8 # Generate a key with `openssl rand -hex 32`
+      ROMM_AUTH_SECRET_KEY: ${ROMM_AUTH_SECRET_KEY?Variable not set} # Generate a key with `openssl rand -hex 32`
       ROMM_AUTH_USERNAME: ${ROMM_AUTH_USERNAME?Variable not set}
       ROMM_AUTH_PASSWORD: ${ROMM_AUTH_PASSWORD?Variable not set} # default: admin
     volumes:
@@ -51,7 +51,7 @@ services:
     image: mariadb:latest
     environment:
       TZ: ${TIME_ZONE:-America/Sao_Paulo}
-      MYSQL_ROOT_PASSWORD: ${ROMM_MYSQL_PASSWORD?Variable not set}# Use a unique, secure password
+      MYSQL_ROOT_PASSWORD: ${ROMM_MYSQL_PASSWORD?Variable not set} # Use a unique, secure password
       MYSQL_DATABASE: ${ROMM_MYSQL_DB?Variable not set}
       MYSQL_USER: ${ROMM_MYSQL_USER?Variable not set}
       MYSQL_PASSWORD: ${ROMM_MYSQL_PASSWORD?Variable not set}
