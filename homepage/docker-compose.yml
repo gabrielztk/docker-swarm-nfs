@@ -1,0 +1,57 @@
+services:
+  dockerproxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:latest
+    environment:
+      - CONTAINERS=1 # Allow access to viewing containers
+      - SERVICES=1 # Allow access to viewing services (necessary when using Docker Swarm)
+      - TASKS=1 # Allow access to viewing tasks (necessary when using Docker Swarm)
+      - POST=0 # Disallow any POST operations (effectively read-only)
+    ports:
+      - 2375:2375
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro # Mounted as read-only
+    deploy:
+      mode: global
+    networks:
+      - homepage
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    volumes:
+      - data:/app/config # Make sure your local config directory exists
+      - /var/run/docker.sock:/var/run/docker.sock:ro # (optional) For docker integrations
+    networks:
+      traefik-public:
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+      labels:
+        # Enable Traefik for this service, to make it available in the public network
+        - traefik.enable=true
+        # Use the traefik-public network
+        - traefik.docker.network=traefik-public
+        # Use the custom label "traefik.constraint-label=traefik-public"
+        - traefik.constraint-label=traefik-public
+        # traefik-https the actual router using HTTPS
+        # Uses the environment variable BASE_DOMAIN
+        - traefik.http.routers.homepage.rule=Host(`homepage.${BASE_DOMAIN?Variable not set}`)
+        - traefik.http.routers.homepage.entrypoints=https
+        - traefik.http.routers.homepage.tls=true
+        # Serve the container on port 3000
+        - traefik.http.services.homepage.loadbalancer.server.port=3000
+        # Use the "le" (Let's Encrypt) resolver
+        - traefik.http.routers.homepage.tls.certresolver=le
+
+networks:
+  homepage:
+  traefik-public:
+    external: true
+
+volumes:
+  data:
+    driver: local
+    driver_opts:
+      type: "nfs"
+      o: addr=${NFS_IP?Variable not set},nolock,soft,rw
+      device: ":${NFS_SHARE_PATH?Variable not set}/docker-swarm/homepage/homepage-volume"
