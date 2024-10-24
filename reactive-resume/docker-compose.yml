@@ -94,6 +94,9 @@ services:
     networks:
       - reactive_resume_network
       - traefik-public
+    depends_on:
+      - postgress
+      - minio
     environment:
       TZ: ${TIME_ZONE:-America/Sao_Paulo}
       # -- Environment Variables --
