@@ -34,6 +34,13 @@ services:
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.swarmpit.tls.certresolver=le
 
+        # Homepage labels
+        - homepage.group=Docker
+        - homepage.name=Swarmpit
+        - homepage.icon=swarmpit.png
+        - homepage.href=https://swarmpit.${BASE_DOMAIN?Variable not set}
+        - homepage.description=Docker swarm monitor
+
   database:
     image: couchdb:2.3.1
     volumes:
