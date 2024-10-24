@@ -20,11 +20,6 @@ services:
       # The duckdns token for the dns challenge
       DUCKDNS_TOKEN: ${DUCKDNS_TOKEN?Variable not set}
     deploy:
-      placement:
-        constraints:
-          # Make the traefik service run only on the node with this label
-          # as the node with it has the volume for the certificates
-          - node.labels.node.name == ${TRAEFIK_NODE?Variable not set}
       labels:
         # Enable Traefik for this service, to make it available in the public network
         - traefik.enable=true
