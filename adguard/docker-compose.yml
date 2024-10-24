@@ -22,10 +22,6 @@ services:
       TZ: ${TIME_ZONE:-America/Sao_Paulo}
 
     deploy:
-      placement:
-        constraints:
-          # Make the service run only on the node with this label
-          - node.labels.node.name  == ${ADGUARD_NODE?Variable not set}
       labels:
         # Enable Traefik for this service, to make it available in the public network
         - traefik.enable=true
@@ -43,6 +39,13 @@ services:
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.adguardhome.tls.certresolver=le
 
+        # Homepage labels
+        - homepage.group=DNS
+        - homepage.name=Adguard
+        - homepage.icon=adguard-home.png
+        - homepage.href=https://adguard.${BASE_DOMAIN?Variable not set}
+        - homepage.description=DNS server & Ad blocker
+
     volumes:
       # Mount the volume to store adguard data
       - service:/opt/adguardhome/
@@ -58,6 +61,8 @@ services:
     image: ghcr.io/bakito/adguardhome-sync:latest
     environment:
       TZ: ${TIME_ZONE:-America/Sao_Paulo}
+    depends_on:
+      - service
     deploy:
       labels:
         # Enable Traefik for this service, to make it available in the public network
@@ -77,6 +82,7 @@ services:
         - traefik.http.routers.adguardhome-sync.tls.certresolver=le
         # Enable HTTP Basic auth using the middleware
         - traefik.http.routers.adguardhome-sync.middlewares=admin-auth
+
     volumes:
       # Mount the volume to store the sync config
       - sync:/config/:ro
