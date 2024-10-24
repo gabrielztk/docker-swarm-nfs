@@ -38,6 +38,13 @@ services:
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.wallos.tls.certresolver=le
 
+        # Homepage labels
+        - homepage.group=Personal
+        - homepage.name=Wallos
+        - homepage.icon=wallos.png
+        - homepage.href=https://wallos.${BASE_DOMAIN?Variable not set}
+        - homepage.description=Subscriptions tracker
+
 volumes:
   # Create the volumes to store database and logos data, the volumes are saved on the NFS share
   # In specific, inside the wallos directory
