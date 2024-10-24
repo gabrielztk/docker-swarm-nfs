@@ -15,6 +15,7 @@ services:
       ROMM_AUTH_SECRET_KEY: ${ROMM_AUTH_SECRET_KEY?Variable not set} # Generate a key with `openssl rand -hex 32`
       ROMM_AUTH_USERNAME: ${ROMM_AUTH_USERNAME?Variable not set}
       ROMM_AUTH_PASSWORD: ${ROMM_AUTH_PASSWORD?Variable not set} # default: admin
+
     volumes:
       - resources:/romm/resources # Resources fetched from IGDB (covers, screenshots, etc.)
       - redis:/redis-data # Cached data for background tasks
@@ -44,6 +45,14 @@ services:
         - traefik.http.services.romm.loadbalancer.server.port=8080
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.romm.tls.certresolver=le
+
+        # Homepage labels
+        - homepage.group=Games
+        - homepage.name=Rom Managger
+        - homepage.icon=romm.png
+        - homepage.href=https://romm.${BASE_DOMAIN?Variable not set}
+        - homepage.description=Docker swarm monitor
+
     depends_on:
       - database
 
