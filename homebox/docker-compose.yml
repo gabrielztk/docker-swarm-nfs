@@ -28,6 +28,13 @@ services:
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.homebox.tls.certresolver=le
 
+        # Homepage labels
+        - homepage.group=Home
+        - homepage.name=Homebox
+        - homepage.icon=homebox.png
+        - homepage.href=https://homebox.${BASE_DOMAIN?Variable not set}
+        - homepage.description=Home invetory
+
 networks:
   # Use the previously created public network "traefik-public", shared with other
   # services and traefik, the service will be publicly available via Traefik
