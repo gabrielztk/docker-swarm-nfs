@@ -37,6 +37,13 @@ services:
         # Enable HTTP Basic auth using the middleware
         - traefik.http.routers.swarm-dashboard.middlewares=admin-auth
 
+        # Homepage labels
+        - homepage.group=Docker
+        - homepage.name=Swarm-dashboard
+        - homepage.icon=docker-moby.png
+        - homepage.href=https://swarm-dashboard.${BASE_DOMAIN?Variable not set}
+        - homepage.description=Docker swarm monitor
+
   node-exporter:
     image: quay.io/prometheus/node-exporter:v1.6.1
     volumes:
