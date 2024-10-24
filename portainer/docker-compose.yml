@@ -48,6 +48,13 @@ services:
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.portainer.tls.certresolver=le
 
+        # Homepage labels
+        - homepage.group=Docker
+        - homepage.name=Portainer
+        - homepage.icon=portainer.png
+        - homepage.href=https://portainer.${BASE_DOMAIN?Variable not set}
+        - homepage.description=Platform for containerized applications
+
 networks:
   agent-network:
     attachable: true
