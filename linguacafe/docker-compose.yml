@@ -39,6 +39,13 @@ services:
         # Use the "le" (Let's Encrypt) resolver
         - traefik.http.routers.linguacafe.tls.certresolver=le
 
+        # Homepage labels
+        - homepage.group=Personal
+        - homepage.name=LinguaCafe
+        - homepage.icon=linguacafe.png
+        - homepage.href=https://linguacafe.${BASE_DOMAIN?Variable not set}
+        - homepage.description=Vocabulary & language learning
+
   database:
     image: mysql:8.0
     tty: true
